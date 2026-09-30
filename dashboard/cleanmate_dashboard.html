@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CleanMate Console</title>
+<style>
+/* ---------- tokens ---------- */
+:root{
+  color-scheme: dark;
+  --bg:#101112; --surface:#1a1a19; --surface-2:#222221; --inset:#141414;
+  --line:#2c2c2a; --line-strong:#3b3b38;
+  --text:#f4f4f2; --text-2:#c3c2b7; --text-3:#8f8e86;
+  --accent:#3987e5; --accent-soft:rgba(57,135,229,.16);
+  --good:#0ca30c; --good-soft:rgba(12,163,12,.16);
+  --warn:#fab219; --warn-soft:rgba(250,178,25,.16);
+  --bad:#d03b3b; --bad-soft:rgba(208,59,59,.18);
+  --car-lead:#3987e5; --car-foll:#9085e9;
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.25);
+  --radius:14px;
+}
+:root[data-theme="light"]{
+  color-scheme: light;
+  --bg:#f3f3f1; --surface:#fcfcfb; --surface-2:#f2f2ef; --inset:#f6f6f3;
+  --line:#e2e1dc; --line-strong:#cfcec8;
+  --text:#0b0b0b; --text-2:#52514e; --text-3:#7a7974;
+  --accent:#2a78d6; --accent-soft:rgba(42,120,214,.12);
+  --good-soft:rgba(12,163,12,.12); --warn-soft:rgba(250,178,25,.18); --bad-soft:rgba(208,59,59,.12);
+  --car-lead:#2a78d6; --car-foll:#4a3aa7;
+  --shadow:0 1px 2px rgba(0,0,0,.05), 0 6px 18px rgba(0,0,0,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--text-3)} .sub{color:var(--text-2)}
+.spacer{flex:1}
+
+/* ---------- top bar ---------- */
+.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:12px 20px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;margin-right:6px}
+.logo{width:32px;height:32px;border-radius:9px;background:var(--accent);display:grid;place-items:center}
+.brand h1{font-size:16px;margin:0;font-weight:650}
+.brand small{display:block;color:var(--text-3);font-size:11.5px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--line);white-space:nowrap}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--text-3)}
+.pill.good{background:var(--good-soft);color:var(--good);border-color:transparent}.pill.good i{background:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}.pill.warn i{background:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}.pill.bad i{background:var(--bad)}
+.pill.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}.pill.acc i{background:var(--accent)}
+:root[data-theme="light"] .pill.warn{color:#8a5d00}
+
+/* ---------- buttons & inputs ---------- */
+button{font:inherit;font-weight:600;color:var(--text);background:var(--surface-2);border:1px solid var(--line-strong);
+  border-radius:10px;padding:8px 14px;cursor:pointer;transition:background .12s,border-color .12s}
+button:hover:not(:disabled){border-color:var(--text-3)}
+button:active:not(:disabled){transform:translateY(1px)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-go{background:var(--good);border-color:var(--good);color:#fff}
+.btn-estop{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:750;letter-spacing:.4px;padding:9px 18px;box-shadow:0 0 0 3px var(--bad-soft)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--text-2)}
+.btn-ghost:hover:not(:disabled){background:var(--surface-2)}
+.seg{display:inline-flex;background:var(--inset);border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px}
+.seg button{border:none;background:transparent;padding:6px 14px;border-radius:8px;color:var(--text-2)}
+.seg button.active{background:var(--surface-2);color:var(--text);box-shadow:0 0 0 1px var(--line-strong)}
+input,select{font:inherit;color:var(--text);background:var(--inset);border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px;width:96px}
+input.wide{width:100%}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-3);font-weight:600}
+
+/* ---------- layout ---------- */
+main{max-width:1440px;margin:0 auto;padding:18px 20px 40px;display:grid;gap:16px;grid-template-columns:repeat(12,minmax(0,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;min-width:0}
+.card h2{margin:0;font-size:13.5px;font-weight:650;color:var(--text-2)}
+.card-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.c-formation{grid-column:span 5} .c-chart{grid-column:span 7}
+.c-robot{grid-column:span 6}
+.c-controls{grid-column:span 8} .c-summary{grid-column:span 4}
+.c-history{grid-column:span 8} .c-log{grid-column:span 4}
+@media(max-width:1100px){.c-formation,.c-chart,.c-controls,.c-summary,.c-history,.c-log{grid-column:1/-1}}
+@media(max-width:760px){.c-robot{grid-column:1/-1} main{padding:12px 16px}}
+
+/* ---------- alert banner ---------- */
+#banner{grid-column:1/-1;display:none;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border-radius:12px;font-weight:650}
+#banner.show{display:flex}
+#banner.bad{background:var(--bad-soft);color:var(--bad);border:1px solid var(--bad)}
+#banner.warn{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+:root[data-theme="light"] #banner.warn{color:#8a5d00}
+#banner .sub{font-weight:450}
+
+/* ---------- formation ---------- */
+.gap-hero{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.hero{font-size:52px;font-weight:720;line-height:1;letter-spacing:-1px}
+.hero small{font-size:16px;font-weight:600;color:var(--text-3);margin-left:4px;letter-spacing:0}
+.kv{display:flex;flex-direction:column;gap:2px}
+.kv span{font-size:11.5px;color:var(--text-3);font-weight:650;text-transform:uppercase;letter-spacing:.5px}
+.kv b{font-size:18px;font-weight:650}
+.good-t{color:var(--good)} .warn-t{color:var(--warn)} .bad-t{color:var(--bad)}
+:root[data-theme="light"] .warn-t{color:#8a5d00}
+#scene{width:100%;height:auto;aspect-ratio:600/260;display:block;margin-top:14px;background:var(--inset);border:1px solid var(--line);border-radius:12px}
+
+/* ---------- chart ---------- */
+.chart-wrap{position:relative}
+#chart{width:100%;height:300px;display:block}
+#tip{position:absolute;pointer-events:none;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:8px;
+  padding:6px 9px;font-size:12px;box-shadow:var(--shadow);display:none;white-space:nowrap}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--inset);border:1px solid var(--line);border-radius:11px;padding:10px 12px;min-width:0}
+.stat span{display:block;font-size:11.5px;color:var(--text-3);font-weight:600}
+.stat b{font-size:19px;font-weight:650}
+@media(max-width:560px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---------- robot cards ---------- */
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.metric{background:var(--inset);border:1px solid var(--line);border-radius:11px;padding:10px 12px;min-width:0}
+.metric span{display:block;font-size:11.5px;color:var(--text-3);font-weight:600}
+.metric b{font-size:20px;font-weight:650}
+.metric em{font-style:normal;font-size:12px;color:var(--text-3);margin-left:3px;font-weight:500}
+@media(max-width:560px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.robot-sub{display:flex;gap:18px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.sonar{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--text-2)}
+.bar{width:90px;height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--good);width:0}
+.robot-msg{margin-top:10px;font-size:13px;font-weight:650;min-height:19px}
+.dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+/* ---------- controls ---------- */
+.tabs{margin-left:auto}
+.panel{display:none} .panel.active{display:block}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.group-label{font-size:11.5px;color:var(--text-3);font-weight:650;text-transform:uppercase;letter-spacing:.5px;margin:20px 0 8px}
+.panel > .group-label:first-child{margin-top:0}
+.chip.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.geom{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.geom div{background:var(--inset);border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-size:12px;color:var(--text-3)}
+.geom b{display:block;color:var(--text);font-size:15px;font-weight:650}
+.hint{font-size:12.5px;color:var(--text-3);margin-top:16px;line-height:1.55}
+.kbd{font:600 11px ui-monospace,Consolas,monospace;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;padding:1px 5px;color:var(--text-2)}
+
+/* ---------- summary ---------- */
+.verdict{font-size:40px;font-weight:780;letter-spacing:.5px;line-height:1}
+.streak{display:flex;gap:6px;margin-top:14px}
+.streak i{flex:1;height:8px;border-radius:99px;background:var(--line)}
+.streak i.on{background:var(--good)}
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.empty{color:var(--text-3);font-size:13px;padding:14px 0}
+
+/* ---------- table & log ---------- */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--text-3);font-weight:650;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px}
+td.reason{white-space:normal;color:var(--text-2)}
+.tag{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px}
+.tag.PASS{background:var(--good-soft);color:var(--good)} .tag.FAIL{background:var(--bad-soft);color:var(--bad)}
+#log{height:260px;overflow:auto;background:var(--inset);border:1px solid var(--line);border-radius:11px;padding:10px;
+  font:12px/1.5 ui-monospace,"SF Mono",Consolas,monospace;color:var(--text-2)}
+#log .good{color:var(--good)} #log .warn{color:var(--warn)} #log .bad{color:var(--bad)} #log .muted{color:var(--text-3)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="logo" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="6" width="7" height="12" rx="2"/><rect x="14" y="6" width="7" height="12" rx="2"/><path d="M10 12h4"/></svg>
+    </div>
+    <div><h1>CleanMate Console</h1><small>Two-robot formation cleaner</small></div>
+  </div>
+  <span id="conn" class="pill"><i></i>Disconnected</span>
+  <span id="guard" class="pill" title="While connected, this page sends a heartbeat. If it stops for about 1 s during a run started here, the leader stops both cars."><i></i>Link guard off</span>
+  <div class="spacer"></div>
+  <button id="btnTheme" class="btn-ghost" title="Switch light / dark">◐ Theme</button>
+  <button id="btnConnect" class="btn-primary">Connect gateway</button>
+  <button id="btnEstop" class="btn-estop" disabled title="Stops both cars and cuts the motors (key: Space)">E-STOP</button>
+</header>
+
+<main>
+  <div id="banner" role="status"></div>
+
+  <section class="card c-formation">
+    <div class="card-head"><h2>Formation</h2><span id="gapState" class="pill"><i></i>No data</span></div>
+    <div class="gap-hero">
+      <div><div class="hero num" id="gap">–<small>mm</small></div><div class="muted" style="margin-top:6px;font-size:12px">Lateral gap (follower ToF)</div></div>
+      <div class="kv"><span>Target</span><b class="num" id="tgt">170 mm</b></div>
+      <div class="kv"><span>Error</span><b class="num" id="err">–</b></div>
+      <div class="kv"><span>Along track</span><b class="num" id="lon">–</b></div>
+    </div>
+    <svg id="scene" viewBox="0 0 600 260" role="img" aria-label="Top view of the two robots"></svg>
+  </section>
+
+  <section class="card c-chart">
+    <div class="card-head"><h2>Gap over the last 30 s</h2><span id="bandLbl" class="pill acc"><i></i>Band ±40 mm</span></div>
+    <div class="stats">
+      <div class="stat"><span>Max deviation</span><b class="num" id="maxdev">–</b></div>
+      <div class="stat"><span>Mean deviation</span><b class="num" id="meandev">–</b></div>
+      <div class="stat"><span>Time in band</span><b class="num" id="inband">–</b></div>
+      <div class="stat"><span>Run time</span><b class="num" id="runtime">–</b></div>
+    </div>
+    <div class="chart-wrap"><canvas id="chart" aria-label="Lateral gap over time"></canvas><div id="tip"></div></div>
+  </section>
+
+  <section class="card c-robot">
+    <div class="card-head"><span class="dot" style="background:var(--car-lead)"></span><h2>Robot 1 · Leader</h2><span id="b1" class="pill"><i></i>No data</span><span class="spacer"></span><span class="muted" style="font-size:12px">IMU · sets the heading</span></div>
+    <div class="metrics">
+      <div class="metric"><span>Speed</span><b class="num" id="v1">–</b><em>m/s</em></div>
+      <div class="metric"><span>Distance</span><b class="num" id="d1">–</b><em>m</em></div>
+      <div class="metric"><span>Heading</span><b class="num" id="y1">–</b><em>°</em></div>
+      <div class="metric"><span>Battery</span><b class="num" id="bt1">–</b></div>
+    </div>
+    <div class="robot-sub">
+      <div class="sonar">Sonar left <div class="bar"><i id="sl1"></i></div><span class="num" id="sLt1">–</span></div>
+      <div class="sonar">Sonar right <div class="bar"><i id="sr1"></i></div><span class="num" id="sRt1">–</span></div>
+    </div>
+    <div class="robot-msg" id="r1"></div>
+  </section>
+  <section class="card c-robot">
+    <div class="card-head"><span class="dot" style="background:var(--car-foll)"></span><h2>Robot 2 · Follower</h2><span id="b2" class="pill"><i></i>No data</span><span class="spacer"></span><span class="muted" style="font-size:12px">IMU + ToF · holds the gap</span></div>
+    <div class="metrics">
+      <div class="metric"><span>Speed</span><b class="num" id="v2">–</b><em>m/s</em></div>
+      <div class="metric"><span>Distance</span><b class="num" id="d2">–</b><em>m</em></div>
+      <div class="metric"><span>Heading</span><b class="num" id="y2">–</b><em>°</em></div>
+      <div class="metric"><span>Battery</span><b class="num" id="bt2">–</b></div>
+    </div>
+    <div class="robot-sub">
+      <div class="sonar">Sonar left <div class="bar"><i id="sl2"></i></div><span class="num" id="sLt2">–</span></div>
+      <div class="sonar">Sonar right <div class="bar"><i id="sr2"></i></div><span class="num" id="sRt2">–</span></div>
+    </div>
+    <div class="robot-msg" id="r2"></div>
+  </section>
+
+  <section class="card c-controls">
+    <div class="card-head">
+      <h2>Controls</h2>
+      <div class="seg tabs" role="tablist">
+        <button class="tab active" data-tab="drive">Drive</button>
+        <button class="tab" data-tab="path">Path</button>
+        <button class="tab" data-tab="tune">Tune</button>
+      </div>
+    </div>
+
+    <div class="panel active" id="p-drive">
+      <div class="group-label">Formation run</div>
+      <div class="row">
+        <label class="f">Speed (m/s)<input id="speed" type="number" step="0.01" min="0.03" max="0.14" value="0.08"></label>
+        <button id="btnStart" class="btn-go" disabled>▶ Start both</button>
+        <button id="btnStop" disabled>■ Stop</button>
+        <button id="btnReset" disabled>↺ Reset faults</button>
+      </div>
+      <div class="group-label">Spacing</div>
+      <div class="row">
+        <button class="chip preset" data-mm="150" disabled>15 cm</button>
+        <button class="chip preset" data-mm="170" disabled>17 cm</button>
+        <button class="chip preset" data-mm="190" disabled>19 cm</button>
+        <label class="f">Custom (mm)<input id="gapT" type="number" step="1" min="120" max="250" value="170"></label>
+        <button id="btnGap" disabled>Set</button>
+      </div>
+      <div class="geom" id="geom"></div>
+      <div class="hint">Spacing can be changed during a run. Parked cars hold their heading: turn one by hand and it turns back. <span class="kbd">Space</span> = E-STOP (cuts the motors and pauses the hold).</div>
+    </div>
+
+    <div class="panel" id="p-path">
+      <div class="group-label">Single moves</div>
+      <div class="row">
+        <label class="f">Speed (m/s)<input id="pv" type="number" step="0.01" min="0.03" max="0.12" value="0.08"></label>
+        <button class="path" data-cmd="turn 90" disabled>↺ Turn left 90°</button>
+        <button class="path" data-cmd="turn -90" disabled>↻ Turn right 90°</button>
+        <button class="path" id="btnUL" disabled>U-turn left</button>
+        <button class="path" id="btnUR" disabled>U-turn right</button>
+      </div>
+      <div class="group-label">Cleaning pattern</div>
+      <div class="row">
+        <label class="f">Lanes<input id="lanes" type="number" min="1" max="12" value="3" style="width:70px"></label>
+        <label class="f">Lane length (m)<input id="laneLen" type="number" step="0.1" min="0.2" max="5" value="1.5"></label>
+        <label class="f">Lane pitch (m)<input id="pitch" type="number" step="0.01" min="0.3" max="1.0" value="0.75"></label>
+        <label class="f">First shift<select id="side"><option value="1">Left</option><option value="-1">Right</option></select></label>
+        <button class="path btn-go" id="btnMow" disabled>▶ Run pattern</button>
+      </div>
+      <div class="hint">Turns rotate the pair about its middle: the outer car drives forward and the inner car reverses, so the spacing is kept. Keep the lane pitch a little under the cleaning swath so lanes overlap.</div>
+    </div>
+
+    <div class="panel" id="p-tune">
+      <div class="group-label">Follower speed trim (saved in the follower)</div>
+      <div class="row">
+        <button class="path" data-raw="2 trim -3" disabled>−3%</button>
+        <button class="path" data-raw="2 trim -1" disabled>−1%</button>
+        <button class="path" data-raw="2 trim 1" disabled>+1%</button>
+        <button class="path" data-raw="2 trim 3" disabled>+3%</button>
+        <span class="muted" style="font-size:12.5px;align-self:center">− if the follower pulls ahead, + if it drops behind.</span>
+      </div>
+      <div class="group-label">Parked heading hold</div>
+      <div class="row">
+        <button class="path" data-raw="hold" disabled>Hold on (both)</button>
+        <button class="path" data-raw="hold off" disabled>Hold off (leader)</button>
+        <button class="path" data-raw="2 hold off" disabled>Hold off (follower)</button>
+      </div>
+      <div class="group-label">Leader search</div>
+      <div class="row">
+        <button class="path" data-raw="2 search" disabled>⟳ Test search now</button>
+        <span class="muted" style="font-size:12.5px;align-self:center">During a run: the leader waits, the follower sweeps ±10 cm forward/back until it sees the leader again. Also starts by itself if the gap reads over 35 cm or is lost.</span>
+      </div>
+      <div class="group-label">Raw command</div>
+      <div class="row">
+        <label class="f" style="flex:1;min-width:220px">Goes to the leader; start with “2 ” for the follower<input id="cmd" class="wide" placeholder="e.g.  k   ·   2 cfg   ·   mow 3 1.5 0.75" disabled></label>
+        <button id="btnSend" disabled>Send</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card c-summary">
+    <div class="card-head"><h2>Last run</h2><span class="spacer"></span><span id="streakLbl" class="muted num" style="font-size:12px">0 / 5 clean in a row</span></div>
+    <div id="lastrun"><div class="empty">No completed runs yet. Start a run, then stop it or let it finish.</div></div>
+    <div class="streak" id="streak"></div>
+  </section>
+
+  <section class="card c-history">
+    <div class="card-head"><h2>Run history</h2><span class="spacer"></span>
+      <button id="btnRunsCsv" class="btn-ghost">↓ Runs CSV</button><button id="btnCsv" class="btn-ghost">↓ Telemetry CSV</button></div>
+    <div style="overflow-x:auto">
+      <table id="runs"><thead><tr><th>#</th><th>Time</th><th>Result</th><th>Duration</th><th>Distance</th><th>Max dev</th><th>In band</th><th>Spacing</th><th>Ended by</th></tr></thead><tbody></tbody></table>
+      <div id="runsEmpty" class="empty">Scored runs will appear here.</div>
+    </div>
+  </section>
+
+  <section class="card c-log">
+    <div class="card-head"><h2>Log</h2><span class="spacer"></span><button id="btnClear" class="btn-ghost">Clear</button></div>
+    <div id="log"></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const STATE = ['Idle','Running','Paused','Fault'];
+const FAULTS = ['None','Comms lost','Gap too near','Gap lost','Longitudinal error','Obstacle ahead',
+                'Low battery','Wheel stall','Partner car fault','Laptop link lost'];
+const BODY_CM = 20, BRUSH_CM = 45, TOL_MAX_MM = 40, STREAK_GOAL = 5, SONAR_STOP_MM = 200;
+
+let port, writer, connected = false, hbWorker = null;
+const bots = {1:{}, 2:{}};
+const csvRows = [], gapHist = [], runs = [];
+let run = null, lastRun = null, streak = 0;
+
+/* ---------- theme ---------- */
+(function(){
+  let t = null; try { t = localStorage.getItem('cm-theme'); } catch(e){}
+  if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t;
+})();
+$('btnTheme').onclick = () => {
+  const t = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('cm-theme', t); } catch(e){}
+};
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ---------- log ---------- */
+function log(msg, cls){
+  const el = $('log'), d = document.createElement('div');
+  if (cls) d.className = cls;
+  d.textContent = new Date().toLocaleTimeString() + '  ' + msg;
+  el.appendChild(d);
+  while (el.childNodes.length > 400) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+}
+$('btnClear').onclick = () => { $('log').innerHTML = ''; };
+function pill(el, text, cls){ el.className = 'pill' + (cls ? ' ' + cls : ''); el.innerHTML = '<i></i>' + text; }
+
+/* ---------- geometry ---------- */
+function geom(){
+  const gap = +$('gapT').value || 170;
+  const centre = BODY_CM + gap / 10, overlap = BRUSH_CM - centre, swath = BRUSH_CM + centre;
+  const tol = Math.max(5, Math.min(TOL_MAX_MM, overlap * 5));
+  return { gap, centre, overlap, swath, tol };
+}
+function updateGeom(){
+  const g = geom();
+  $('geom').innerHTML =
+    `<div>Clearance<b>${(g.gap/10).toFixed(1)} cm</b></div>` +
+    `<div>Centre spacing<b>${g.centre.toFixed(1)} cm</b></div>` +
+    `<div>Brush overlap<b class="${g.overlap <= 0 ? 'bad-t' : ''}">${g.overlap.toFixed(1)} cm</b></div>` +
+    `<div>Cleaning swath<b>${g.swath.toFixed(1)} cm</b></div>` +
+    `<div>Allowed drift<b>±${g.tol.toFixed(0)} mm</b></div>`;
+  pill($('bandLbl'), 'Band ±' + g.tol.toFixed(0) + ' mm', 'acc');
+  $('tgt').textContent = g.gap + ' mm';
+  document.querySelectorAll('button.preset').forEach(b => b.classList.toggle('active', +b.dataset.mm === g.gap));
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'p-' + t.dataset.tab));
+});
+
+/* ---------- connection ---------- */
+function setConnected(on){
+  connected = on;
+  pill($('conn'), on ? 'Connected' : 'Disconnected', on ? 'good' : '');
+  pill($('guard'), on ? 'Link guard on' : 'Link guard off', on ? 'good' : '');
+  $('btnConnect').textContent = on ? 'Disconnect' : 'Connect gateway';
+  $('btnConnect').className = on ? '' : 'btn-primary';
+  ['btnEstop','btnStart','btnStop','btnReset','btnGap','btnSend','cmd'].forEach(id => $(id).disabled = !on);
+  document.querySelectorAll('button.preset, button.path').forEach(b => b.disabled = !on);
+  if (!on) stopHeartbeat();
+}
+function startHeartbeat(){      // Web Worker: background-tab throttling cannot starve it
+  stopHeartbeat();
+  hbWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(1),200)'], { type: 'text/javascript' })));
+  hbWorker.onmessage = () => { if (connected && writer) writer.write('h\n').catch(()=>{}); };
+}
+function stopHeartbeat(){ if (hbWorker){ hbWorker.terminate(); hbWorker = null; } }
+
+async function connect(){
+  if (!('serial' in navigator)) { log('Web Serial not supported - open this file in Chrome or Edge.', 'bad'); return; }
+  try { port = await navigator.serial.requestPort(); await port.open({ baudRate: 115200 }); }
+  catch(e){
+    if (/permissions policy/i.test(e.message)) log('USB access is blocked in this preview. Open the downloaded file in Chrome or Edge.', 'bad');
+    else if (e.name === 'NotFoundError') log('No port selected.', 'warn');
+    else log('Could not open port: ' + e.message + ' (close the Arduino Serial Monitor first)', 'bad');
+    return;
+  }
+  const enc = new TextEncoderStream(); enc.readable.pipeTo(port.writable);
+  writer = enc.writable.getWriter();
+  setConnected(true); startHeartbeat();
+  log('Connected to gateway. Link guard on.', 'good');
+  readLoop();
+}
+async function disconnect(){
+  stopHeartbeat();
+  try { await writer.close(); } catch(e){}
+  try { await port.close(); } catch(e){}
+  setConnected(false);
+  log('Disconnected. A run started from this page stops within about 1 s.', 'warn');
+}
+async function readLoop(){
+  const dec = new TextDecoderStream();
+  port.readable.pipeTo(dec.writable).catch(()=>{});
+  const reader = dec.readable.getReader();
+  let buf = '';
+  try {
+    while (true){
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += value; let i;
+      while ((i = buf.indexOf('\n')) >= 0){ handleLine(buf.slice(0, i).trim()); buf = buf.slice(i + 1); }
+    }
+  } catch(e){ log('Read error: ' + e.message, 'bad'); }
+  setConnected(false);
+}
+async function send(cmd){
+  if (!connected) return;
+  try { await writer.write(cmd + '\n'); log('> ' + cmd, 'muted'); }
+  catch(e){ log('Send failed: ' + e.message, 'bad'); }
+}
+
+/* ---------- telemetry ---------- */
+const faultName = c => FAULTS[c] || ('code ' + c);
+function handleLine(line){
+  if (!line) return;
+  if (line.startsWith('T,')){
+    const f = line.split(',').slice(1);
+    if (f.length !== 14) return;
+    const id = +f[0]; if (!bots[id]) return;
+    const b = bots[id], prev = b.state, prevSearch = b.search;
+    b.state = +f[1]; b.yaw = +f[6]; b.dist = +f[7]; b.v = +f[8]; b.gap = +f[9];
+    b.fl = +f[10]; b.fr = +f[11]; b.batt = +f[12]; b.flags = +f[13];
+    b.fault = (b.flags >> 3) & 0xF; b.search = !!(b.flags & 0x80); b.ts = performance.now();
+    csvRows.push([new Date().toISOString(), ...f, b.state === 3 ? b.fault : 0].join(','));
+    if (b.state === 3 && prev !== 3) log(`Robot ${id} stopped: ${faultName(b.fault)}`, 'bad');
+    if (b.search && !prevSearch) log('Follower lost the leader - searching ±10 cm', 'warn');
+    if (!b.search && prevSearch && b.state === 1) log('Follower found the leader - resuming', 'good');
+    if (id === 2 && b.gap > 0) gapHist.push({ t: b.ts, gap: b.gap });
+    const cut = performance.now() - 30000;
+    while (gapHist.length && gapHist[0].t < cut) gapHist.shift();
+  } else log(line, line.startsWith('G,') ? 'muted' : '');
+}
+const fresh = (b, now) => b.ts && now - b.ts < 1500;
+
+/* ---------- runs ---------- */
+function trackRun(now){
+  const l = bots[1], f = bots[2], g = geom();
+  const active = (fresh(l, now) && l.state === 1) || (fresh(f, now) && f.state === 1);
+  if (active && !run) run = { t0: now, tLast: now, gapN: 0, inBand: 0, maxDev: 0, sumDev: 0, dist: 0, tol: g.tol, gap: g.gap, wall: new Date(), yaw0: l.yaw || 0, maxTurn: 0 };
+  if (!run) return;
+  if (active){
+    run.tLast = now;
+    run.dist = Math.max(run.dist, l.dist || 0, f.dist || 0);
+    if (fresh(l, now)) run.maxTurn = Math.max(run.maxTurn, Math.abs((l.yaw || 0) - run.yaw0));
+    if (fresh(f, now) && f.state === 1 && f.gap > 0 && !f.search){
+      const dev = Math.abs(f.gap - run.gap);
+      run.gapN++; run.sumDev += dev; run.maxDev = Math.max(run.maxDev, dev);
+      if (dev <= run.tol) run.inBand++;
+    }
+  } else finishRun(now);
+}
+function finishRun(now){
+  const l = bots[1], f = bots[2];
+  let reason = 'Stopped normally', clean = true;
+  if (f.state === 3){ reason = faultName(f.fault) + ' (follower)'; clean = false; }
+  else if (l.state === 3){ reason = faultName(l.fault) + ' (leader)'; clean = false; }
+  else if (!fresh(f, now) || !fresh(l, now)){ reason = 'Telemetry lost'; clean = false; }
+  const dur = (run.tLast - run.t0) / 1000;
+  const turned = run.maxTurn > 20;                      // turns / patterns are not scored against the straight-line band
+  const result = turned ? 'TURN' : (clean && (dur < 2 || run.gapN < 10)) ? 'SHORT' : (clean && run.maxDev <= run.tol) ? 'PASS' : 'FAIL';
+  if (turned && clean) reason = 'Turn / pattern run (not scored). Max gap change ' + run.maxDev.toFixed(0) + ' mm';
+  if (result === 'FAIL' && clean) reason = `Gap deviated ${run.maxDev.toFixed(0)} mm (limit ${run.tol.toFixed(0)})`;
+  const r = { n: runs.length + 1, time: run.wall.toLocaleTimeString(), result, dur, dist: run.dist,
+    avgV: dur > 0 ? run.dist / dur : 0, maxDev: run.maxDev, meanDev: run.gapN ? run.sumDev / run.gapN : 0,
+    inBandPct: run.gapN ? 100 * run.inBand / run.gapN : 0, tol: run.tol, gap: run.gap, reason };
+  if (result !== 'SHORT' && result !== 'TURN'){ runs.push(r); streak = result === 'PASS' ? streak + 1 : 0; }
+  lastRun = r; run = null;
+  log(`Run ${result}: ${dur.toFixed(1)} s, ${r.dist.toFixed(2)} m, max dev ${r.maxDev.toFixed(0)} mm - ${reason}`,
+      result === 'PASS' ? 'good' : result === 'FAIL' ? 'bad' : 'warn');
+  renderRuns();
+}
+function renderRuns(){
+  $('streakLbl').textContent = `${Math.min(streak, STREAK_GOAL)} / ${STREAK_GOAL} clean in a row`;
+  $('streak').innerHTML = Array.from({length: STREAK_GOAL}, (_, i) => `<i class="${i < streak ? 'on' : ''}"></i>`).join('');
+  if (lastRun){
+    const r = lastRun, cls = r.result === 'PASS' ? 'good-t' : r.result === 'FAIL' ? 'bad-t' : 'warn-t';
+    $('lastrun').innerHTML =
+      `<div style="display:flex;align-items:baseline;gap:12px"><div class="verdict ${cls}">${r.result}</div><span class="muted num">${r.time}</span></div>
+       <div class="sub" style="margin-top:8px;font-size:13px">${r.result === 'SHORT' ? 'Too short to score (under 2 s or no gap data). ' : ''}${r.reason}</div>
+       <div class="sum-grid">
+         <div class="stat"><span>Duration</span><b class="num">${r.dur.toFixed(1)} s</b></div>
+         <div class="stat"><span>Distance</span><b class="num">${r.dist.toFixed(2)} m</b></div>
+         <div class="stat"><span>Max deviation</span><b class="num">${r.maxDev.toFixed(0)} mm</b></div>
+         <div class="stat"><span>In ±${r.tol.toFixed(0)} mm</span><b class="num">${r.inBandPct.toFixed(0)}%</b></div>
+       </div>`;
+  }
+  const tb = document.querySelector('#runs tbody'); tb.innerHTML = '';
+  runs.slice(-12).reverse().forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="num">${r.n}</td><td class="num">${r.time}</td><td><span class="tag ${r.result}">${r.result}</span></td>
+      <td class="num">${r.dur.toFixed(1)} s</td><td class="num">${r.dist.toFixed(2)} m</td><td class="num">${r.maxDev.toFixed(0)} mm</td>
+      <td class="num">${r.inBandPct.toFixed(0)}%</td><td class="num">${(r.gap/10).toFixed(0)} cm</td><td class="reason">${r.reason}</td>`;
+    tb.appendChild(tr);
+  });
+  $('runs').style.display = runs.length ? '' : 'none';
+  $('runsEmpty').style.display = runs.length ? 'none' : '';
+}
+
+/* ---------- render loop ---------- */
+function sonarBar(id, side, mm){
+  const bar = $('s' + side + id), txt = $('s' + (side === 'l' ? 'Lt' : 'Rt') + id);
+  if (!(mm > 20 && mm < 2000)){ bar.style.width = '0'; txt.textContent = 'clear'; return; }
+  bar.style.width = Math.max(6, 100 - mm / 20) + '%';
+  bar.style.background = mm < SONAR_STOP_MM ? 'var(--bad)' : mm < 400 ? 'var(--warn)' : 'var(--good)';
+  txt.textContent = (mm / 10).toFixed(0) + ' cm';
+}
+function render(){
+  const now = performance.now(), g = geom();
+  trackRun(now);
+  let banner = null;
+  for (const id of [1,2]){
+    const b = bots[id];
+    if (!b.ts) continue;
+    const stale = now - b.ts > 1500;
+    if (stale) pill($('b' + id), 'No signal', 'warn');
+    else if (b.state === 3) pill($('b' + id), 'Fault', 'bad');
+    else if (b.search) pill($('b' + id), 'Searching', 'warn');
+    else pill($('b' + id), STATE[b.state] || '?', b.state === 1 ? 'good' : '');
+    let msg = '', mcls = '';
+    if (!stale && b.state === 3){ msg = '⚠ ' + faultName(b.fault); mcls = 'bad-t'; }
+    else if (!stale && b.search){ msg = '⟳ Searching for the leader (±10 cm)'; mcls = 'warn-t'; }
+    $('r' + id).textContent = msg; $('r' + id).className = 'robot-msg ' + mcls;
+    $('v' + id).textContent = b.v.toFixed(3);
+    $('d' + id).textContent = b.dist.toFixed(2);
+    $('y' + id).textContent = b.yaw.toFixed(1);
+    const bv = b.batt / 1000;
+    $('bt' + id).innerHTML = bv < 6 ? '<span class="muted" style="font-size:15px">not wired</span>' : bv.toFixed(1) + '<em>V</em>';
+    sonarBar(id, 'l', b.fl); sonarBar(id, 'r', b.fr);
+    if (!stale && b.state === 3 && !banner) banner = { cls: 'bad', t: `${id === 1 ? 'Leader' : 'Follower'} stopped: ${faultName(b.fault)}`, s: 'Fix the cause, press Reset faults, then start again.' };
+    if (!stale && b.search && !banner) banner = { cls: 'warn', t: 'Follower is searching for the leader', s: 'The leader waits while the follower sweeps ±10 cm.' };
+  }
+  const bn = $('banner');
+  if (banner){ bn.className = 'show ' + banner.cls; bn.innerHTML = `<span>${banner.t}</span><span class="sub">${banner.s}</span>`; }
+  else bn.className = '';
+
+  const f = bots[2], l = bots[1];
+  if (fresh(f, now) && f.gap > 0){
+    const err = f.gap - g.gap, ae = Math.abs(err);
+    const cls = ae <= g.tol ? 'good' : ae <= g.tol * 1.5 ? 'warn' : 'bad';
+    $('gap').innerHTML = f.gap + '<small>mm</small>'; $('gap').className = 'hero num ' + cls + '-t';
+    $('err').textContent = (err > 0 ? '+' : '') + err.toFixed(0) + ' mm';
+    pill($('gapState'), cls === 'good' ? 'In band' : cls === 'warn' ? 'Drifting' : 'Out of band', cls);
+  } else {
+    $('gap').innerHTML = '–<small>mm</small>'; $('gap').className = 'hero num';
+    $('err').textContent = '–'; pill($('gapState'), f.ts ? 'No gap reading' : 'No data', f.ts ? 'warn' : '');
+  }
+  if (fresh(f, now) && fresh(l, now)){
+    const d = (f.dist - l.dist) * 1000;
+    $('lon').textContent = Math.abs(d) < 5 ? 'Level' : (d > 0 ? 'F ahead ' : 'F behind ') + Math.abs(d).toFixed(0) + ' mm';
+  } else $('lon').textContent = '–';
+
+  if (run){
+    $('maxdev').textContent = run.gapN ? run.maxDev.toFixed(0) + ' mm' : '–';
+    $('meandev').textContent = run.gapN ? (run.sumDev / run.gapN).toFixed(0) + ' mm' : '–';
+    $('inband').textContent = run.gapN ? Math.round(100 * run.inBand / run.gapN) + '%' : '–';
+    $('runtime').textContent = ((now - run.t0) / 1000).toFixed(1) + ' s';
+  } else if (lastRun){
+    const s = lastRun;
+    $('maxdev').textContent = s.maxDev.toFixed(0) + ' mm'; $('meandev').textContent = s.meanDev.toFixed(0) + ' mm';
+    $('inband').textContent = s.inBandPct.toFixed(0) + '%'; $('runtime').textContent = s.dur.toFixed(1) + ' s';
+  }
+  drawScene(g, now); drawChart(g, now);
+}
+
+/* ---------- top-view scene ---------- */
+function carSvg(x, y, yaw, color, label, b, now){
+  const W = 90, L = 106;                                  // 200 mm wide car at 0.45 px/mm
+  const ok = fresh(b, now);
+  const cone = mm => (mm > 20 && mm < SONAR_STOP_MM) ? css('--bad') : (mm > 20 && mm < 400) ? css('--warn') : css('--line-strong');
+  return `<g transform="translate(${x},${y}) rotate(${-(yaw || 0)})" opacity="${ok ? 1 : .35}">
+    <path d="M${-W/2+12},${-L/2} l-18,-52 h28 z" fill="${cone(b.fl)}" opacity=".6"/>
+    <path d="M${W/2-12},${-L/2} l18,-52 h-28 z" fill="${cone(b.fr)}" opacity=".6"/>
+    <rect x="${-W/2-8}" y="-20" width="9" height="32" rx="3" fill="${css('--text-3')}"/>
+    <rect x="${W/2-1}" y="-20" width="9" height="32" rx="3" fill="${css('--text-3')}"/>
+    <rect x="${-W/2}" y="${-L/2}" width="${W}" height="${L}" rx="16" fill="${color}"/>
+    <path d="M0,${-L/2+12} l-12,18 h24 z" fill="#fff" opacity=".92"/>
+    <text y="${L/2-14}" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">${label}</text>
+  </g>`;
+}
+function drawScene(g, now){
+  const f = bots[2], l = bots[1], pxmm = 0.45, cx = 300, cy = 118;
+  const haveGap = fresh(f, now) && f.gap > 0;
+  const gapMm = haveGap ? f.gap : g.gap;
+  const sep = (200 + Math.min(gapMm, 600)) * pxmm;       // centre-to-centre
+  const fx = cx - sep / 2, lx = cx + sep / 2;
+  let dy = 0;
+  if (fresh(f, now) && fresh(l, now)) dy = Math.max(-50, Math.min(50, (l.dist - f.dist) * 1000 * pxmm));
+  const fy = cy + dy / 2, ly = cy - dy / 2;
+  const x1 = fx + 45, x2 = lx - 45, yl = cy + 74;
+  const err = Math.abs(gapMm - g.gap);
+  const col = !haveGap ? css('--text-3') : err <= g.tol ? css('--good') : err <= g.tol * 1.5 ? css('--warn') : css('--bad');
+  $('scene').innerHTML = `
+    <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="${css('--line')}" stroke-width="1"/></pattern></defs>
+    <rect width="600" height="260" fill="url(#grid)"/>
+    <text x="14" y="22" font-size="11" fill="${css('--text-3')}" font-weight="650">TOP VIEW · travel ↑</text>
+    ${carSvg(fx, fy, f.yaw, css('--car-foll'), 'F', f, now)}
+    ${carSvg(lx, ly, l.yaw, css('--car-lead'), 'L', l, now)}
+    <line x1="${x1}" x2="${x2}" y1="${yl}" y2="${yl}" stroke="${col}" stroke-width="2"/>
+    <line x1="${x1}" x2="${x1}" y1="${yl-7}" y2="${yl+7}" stroke="${col}" stroke-width="2"/>
+    <line x1="${x2}" x2="${x2}" y1="${yl-7}" y2="${yl+7}" stroke="${col}" stroke-width="2"/>
+    <text x="${cx}" y="${yl + 22}" text-anchor="middle" font-size="14" font-weight="700" fill="${css('--text')}">${haveGap ? f.gap + ' mm' : 'no gap reading'}</text>
+    <text x="${cx}" y="${yl + 38}" text-anchor="middle" font-size="11" fill="${css('--text-3')}">target ${g.gap} ± ${g.tol.toFixed(0)} mm</text>`;
+}
+
+/* ---------- gap chart (single series, target band, hover crosshair) ---------- */
+let hoverX = null;
+$('chart').addEventListener('mousemove', e => { hoverX = e.clientX - e.target.getBoundingClientRect().left; });
+$('chart').addEventListener('mouseleave', () => { hoverX = null; });
+function drawChart(gm, now){
+  const c = $('chart'), dpr = window.devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
+  if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)){ c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const padL = 44, padR = 12, padT = 10, padB = 26, pw = w - padL - padR, ph = h - padT - padB;
+  const target = gm.gap, tol = gm.tol, lo = target - 100, hi = target + 100;
+  const Y = v => padT + ph - (Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo) * ph;
+  const X = t => padL + pw - (now - t) / 30000 * pw;
+  const ink3 = css('--text-3');
+  g.font = '11px system-ui'; g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (let v = lo; v <= hi; v += 50){
+    g.strokeStyle = css('--line'); g.lineWidth = 1; g.beginPath(); g.moveTo(padL, Y(v)); g.lineTo(w - padR, Y(v)); g.stroke();
+    g.fillStyle = ink3; g.fillText(v, padL - 8, Y(v));
+  }
+  g.textAlign = 'center'; g.textBaseline = 'top';
+  for (let s = 0; s <= 30; s += 10) g.fillText(s === 0 ? 'now' : '−' + s + ' s', Math.min(w - padR - 12, X(now - s * 1000)), h - padB + 8);
+  g.fillStyle = css('--good-soft'); g.fillRect(padL, Y(target + tol), pw, Y(target - tol) - Y(target + tol));
+  g.strokeStyle = css('--good'); g.setLineDash([5, 4]); g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(padL, Y(target)); g.lineTo(w - padR, Y(target)); g.stroke(); g.setLineDash([]);
+  g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillStyle = css('--text-2');
+  g.fillText('target ' + target + ' mm  (±' + tol.toFixed(0) + ')', padL + 6, Y(target + tol) - 3);
+  g.save(); g.beginPath(); g.rect(padL, padT, pw, ph); g.clip();
+  g.strokeStyle = css('--accent'); g.lineWidth = 2; g.lineJoin = 'round'; g.beginPath();
+  gapHist.forEach((p, i) => i ? g.lineTo(X(p.t), Y(p.gap)) : g.moveTo(X(p.t), Y(p.gap)));
+  g.stroke(); g.restore();
+  if (!gapHist.length){ g.fillStyle = ink3; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('Waiting for gap readings…', padL + pw / 2, padT + ph / 2 + 30); }
+  const last = gapHist[gapHist.length - 1];
+  if (last && now - last.t < 1500){
+    g.fillStyle = css('--accent'); g.strokeStyle = css('--surface'); g.lineWidth = 2;
+    g.beginPath(); g.arc(X(last.t), Y(last.gap), 4.5, 0, 7); g.fill(); g.stroke();
+  }
+  const tip = $('tip');
+  if (hoverX !== null && hoverX > padL && gapHist.length){
+    const t = now - (padL + pw - hoverX) / pw * 30000;
+    let best = gapHist[0]; for (const p of gapHist) if (Math.abs(p.t - t) < Math.abs(best.t - t)) best = p;
+    const px = X(best.t), py = Y(best.gap), dev = best.gap - target;
+    g.strokeStyle = ink3; g.lineWidth = 1; g.beginPath(); g.moveTo(px, padT); g.lineTo(px, padT + ph); g.stroke();
+    g.fillStyle = css('--accent'); g.strokeStyle = css('--surface'); g.lineWidth = 2; g.beginPath(); g.arc(px, py, 5, 0, 7); g.fill(); g.stroke();
+    tip.style.display = 'block';
+    tip.innerHTML = `<b class="num">${best.gap} mm</b> <span class="muted">(${dev > 0 ? '+' : ''}${dev} vs target)</span><br><span class="muted">${((now - best.t) / 1000).toFixed(1)} s ago</span>`;
+    tip.style.left = Math.max(0, Math.min(px + 12, w - tip.offsetWidth - 4)) + 'px'; tip.style.top = Math.max(0, py - 48) + 'px';
+  } else tip.style.display = 'none';
+}
+
+/* ---------- actions ---------- */
+async function estop(){ for (let i = 0; i < 3; i++){ await send('x'); await new Promise(r => setTimeout(r, 40)); } log('E-STOP sent (motors off, hold paused)', 'bad'); }
+function setGap(mm){ mm = Math.min(250, Math.max(120, Math.round(mm))); $('gapT').value = mm; updateGeom(); send('g ' + mm); }
+function download(name, text){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = name; a.click(); }
+async function pathCmd(c){
+  const pv = Math.min(0.12, Math.max(0.03, +$('pv').value || 0.08));
+  await send('mv ' + pv.toFixed(2)); await new Promise(r => setTimeout(r, 60)); send(c);
+}
+$('btnConnect').onclick = () => connected ? disconnect() : connect();
+$('btnEstop').onclick = estop;
+$('btnStop').onclick = () => send('s');
+$('btnReset').onclick = () => send('r');
+$('btnStart').onclick = () => {
+  const v = Math.min(0.14, Math.max(0.03, +$('speed').value || 0.08));
+  $('speed').value = v.toFixed(2); send('d ' + v.toFixed(2));
+};
+$('btnGap').onclick = () => setGap(+$('gapT').value);
+$('gapT').addEventListener('input', updateGeom);
+document.querySelectorAll('button.preset').forEach(b => b.onclick = () => setGap(+b.dataset.mm));
+document.querySelectorAll('button.path[data-raw]').forEach(b => b.onclick = async () => {
+  if (b.dataset.raw === 'hold'){ await send('hold'); await new Promise(r => setTimeout(r, 60)); send('2 hold'); }
+  else send(b.dataset.raw);
+});
+document.querySelectorAll('button.path[data-cmd]').forEach(b => b.onclick = () => pathCmd(b.dataset.cmd));
+$('btnUL').onclick = () => pathCmd('uturn ' + (+$('pitch').value || 0.75).toFixed(2));
+$('btnUR').onclick = () => pathCmd('uturn -' + (+$('pitch').value || 0.75).toFixed(2));
+$('btnMow').onclick = () => {
+  const n = Math.max(1, Math.min(12, parseInt($('lanes').value) || 3));
+  const L = Math.max(0.2, Math.min(5, +$('laneLen').value || 1.5));
+  const p = Math.max(0.3, Math.min(1.0, +$('pitch').value || 0.75)) * (+$('side').value);
+  pathCmd('mow ' + n + ' ' + L.toFixed(2) + ' ' + p.toFixed(2));
+};
+$('btnSend').onclick = () => { const v = $('cmd').value.trim(); if (v){ send(v); $('cmd').value = ''; } };
+$('cmd').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnSend').click(); });
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName) && connected){ e.preventDefault(); estop(); }
+});
+$('btnCsv').onclick = () => download('cleanmate_telemetry.csv',
+  'pc_time,id,state,seq,t_ms,encL,encR,heading,dist_m,v_mps,gap_mm,fl_mm,fr_mm,batt_mv,flags,fault_code\n' + csvRows.join('\n'));
+$('btnRunsCsv').onclick = () => download('cleanmate_runs.csv',
+  'run,time,result,duration_s,distance_m,avg_speed_mps,max_dev_mm,mean_dev_mm,in_band_pct,tolerance_mm,spacing_mm,ended_by\n' +
+  runs.map(r => [r.n, r.time, r.result, r.dur.toFixed(1), r.dist.toFixed(2), r.avgV.toFixed(2), r.maxDev.toFixed(0),
+    r.meanDev.toFixed(0), r.inBandPct.toFixed(0), r.tol.toFixed(0), r.gap, '"' + r.reason + '"'].join(',')).join('\n'));
+
+updateGeom(); renderRuns();
+setInterval(render, 100);
+if (!('serial' in navigator)) log('This browser has no Web Serial. Open the file in Chrome or Edge.', 'bad');
+else log('Close the Arduino Serial Monitor, then click "Connect gateway" and pick the gateway port.');
+</script>
+</body>
+</html>
